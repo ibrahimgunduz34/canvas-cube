@@ -71,52 +71,43 @@
         });
       }
 
-      function calculateRotation(vertices, angle) {
+      function rotateVertex(vertex, angle) {
+        // X Rotation matrix
         const mRotateX = [
           [1, 0 ,0],
           [0, Math.cos(angle), -Math.sin(angle)],
           [0, Math.sin(angle), Math.cos(angle)],
-        ]
+        ];
 
+        // Y Rotation matrix
         const mRotateY = [
           [Math.cos(angle), 0, Math.sin(angle)],
           [0, 1, 0],
           [-Math.sin(angle), 0, Math.cos(angle)]
-        ]
+        ];
 
+        // Z Rotation matrix
         const mRotateZ = [
             [Math.cos(angle), -Math.sin(angle), 0],
             [Math.sin(angle), Math.cos(angle), 0],
             [0, 0, 1]
           ];
 
-        let x, y, z;
-        
-        for (const vertex of vertices) {
-          vertex.x -= CENTER_X;
-          vertex.y -= CENTER_Y;
+        vertex.x -= CENTER_X;
+        vertex.y -= CENTER_Y;
 
-          [x, y, z] = multiplyMatrices(mRotateX, Object.values(vertex).map(_ => [_]))
-            .map(e => e.pop());
-          vertex.y = y;
-          vertex.z = z;
-
-          [x, y, z] = multiplyMatrices(mRotateY, Object.values(vertex).map(_ => [_]))
-            .map(e => e.pop());
-          vertex.x = x;
-          vertex.z = z;
-
-          [x, y, z] = multiplyMatrices(mRotateZ, Object.values(vertex).map(_ => [_]))
-            .map(e => e.pop());
+        for (const mRotate of [mRotateX, mRotateY, mRotateZ]) {
+          const mVertex = Object.values(vertex).map(_ => [_]);
+          const [x, y, z] = multiplyMatrices(mRotate, mVertex).map(e => e.pop());
+          
           vertex.x = x;
           vertex.y = y;
-
-
-          vertex.x += CENTER_X;
-          vertex.y += CENTER_Y;
+          vertex.z = z;
         }
-      }
 
+        vertex.x += CENTER_X;
+        vertex.y += CENTER_Y;
+      }
 
       //----------------------------
       // Main
@@ -129,22 +120,23 @@
       canvas.height = HEIGHT;
       canvas.width = WIDTH;
 
+      // Cube vertices
       const vertices = [
-        new Point(CENTER_X - SIZE, CENTER_Y - SIZE, CENTER_Z - SIZE),
-        new Point(CENTER_X + SIZE, CENTER_Y - SIZE, CENTER_Z - SIZE),
-        new Point(CENTER_X + SIZE, CENTER_Y + SIZE, CENTER_Z - SIZE),
-        new Point(CENTER_X - SIZE, CENTER_Y + SIZE, CENTER_Z - SIZE),
-        new Point(CENTER_X - SIZE, CENTER_Y - SIZE, CENTER_Z + SIZE),
-        new Point(CENTER_X + SIZE, CENTER_Y - SIZE, CENTER_Z + SIZE),
-        new Point(CENTER_X + SIZE, CENTER_Y + SIZE, CENTER_Z + SIZE),
-        new Point(CENTER_X - SIZE, CENTER_Y + SIZE, CENTER_Z + SIZE),
+        new Point(CENTER_X - SIZE, CENTER_Y - SIZE, CENTER_Z - SIZE), // Back - top - left
+        new Point(CENTER_X + SIZE, CENTER_Y - SIZE, CENTER_Z - SIZE), // Back - top right
+        new Point(CENTER_X + SIZE, CENTER_Y + SIZE, CENTER_Z - SIZE), // Back - bottom - right
+        new Point(CENTER_X - SIZE, CENTER_Y + SIZE, CENTER_Z - SIZE), // Back - bottom - left
+        new Point(CENTER_X - SIZE, CENTER_Y - SIZE, CENTER_Z + SIZE), // Front - top - left
+        new Point(CENTER_X + SIZE, CENTER_Y - SIZE, CENTER_Z + SIZE), // Front - top - right
+        new Point(CENTER_X + SIZE, CENTER_Y + SIZE, CENTER_Z + SIZE), // Front - bottom - right
+        new Point(CENTER_X - SIZE, CENTER_Y + SIZE, CENTER_Z + SIZE), // Front - bottom - left
       ]
       
-      // Cube vertices
+      // Cube edges
       const edges = [
-        [0, 1], [1, 2], [2, 3], [3, 0],
-        [4, 5], [5, 6], [6, 7], [7, 4],
-        [0, 4], [1, 5], [2, 6], [3, 7],
+        [0, 1], [1, 2], [2, 3], [3, 0], // Back surface
+        [4, 5], [5, 6], [6, 7], [7, 4], // Front surface
+        [0, 4], [1, 5], [2, 6], [3, 7], // Conjunction lines
       ]
 
       requestAnimationFrame(loop);
@@ -161,8 +153,8 @@
         // angle in radian
         const angle = timeDelta * 0.001 * SPEED * (180 / Math.PI);
         
-        calculateRotation(vertices, angle);
-        // console.log(vertices[0])
+        // Calculate rotation of the vertices
+        vertices.map(vertex => rotateVertex(vertex, angle));
 
         // Draw the cube according to calculated points 
          drawCube(canvas, vertices, edges, COLOR_CUBE);
