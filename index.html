@@ -1,0 +1,174 @@
+<html>
+  <head>
+    <style>
+      body {
+        margin: 0px;
+      }
+
+      canvas {
+        margin: 0px;
+      }
+    </style>
+  </head>
+  <body>
+    <script type="text/javascript">
+      //----------------------------
+      // constants
+      //----------------------------
+      const WIDTH = document.documentElement.clientWidth;
+      const HEIGHT = document.documentElement.clientHeight;
+      const COLOR_BG = '#000000';
+      const COLOR_CUBE = 'green';
+
+      const CENTER_X = WIDTH / 2;
+      const CENTER_Y = HEIGHT / 2;
+      const CENTER_Z = 0;
+      const SIZE = HEIGHT / 4;
+
+      const SPEED = 0.010;
+      const LINE_WIDTH = Math.min(WIDTH, HEIGHT) / 200;
+
+      //----------------------------
+      // Functions
+      //----------------------------
+      function Point(x, y, z) {
+        this.x = x;
+        this.y = y;
+        this.z = z;
+      }
+
+      function drawRect(canvas, x1, y1, x2, y2, color) {
+        const context = canvas.getContext('2d');
+        context.fillStyle = color;
+        context.fillRect(x1, y1, x2, y2);
+      }
+
+      function drawCube(canvas, vertices, edges, color) {
+        const context = canvas.getContext('2d');
+        
+        context.strokeStyle = COLOR_CUBE;
+        context.lineWidth = LINE_WIDTH;
+        
+        context.beginPath();
+        
+        for (const edge of edges) {
+          const beginPoint = vertices[edge[0]];
+          const endPoint = vertices[edge[1]];
+          context.moveTo(beginPoint.x, beginPoint.y);
+          context.lineTo(endPoint.x, endPoint.y);
+        }
+
+        context.stroke();        
+      }
+
+      function multiplyMatrices(m1, m2) {
+        return m1.map((row, i) => {
+          return m2[0].map((_, j) =>
+            row.reduce((acc, _, n) =>
+              acc + m1[i][n] * m2[n][j], 0
+            )
+          )
+        });
+      }
+
+      function calculateRotation(vertices, angle) {
+        const mRotateX = [
+          [1, 0 ,0],
+          [0, Math.cos(angle), -Math.sin(angle)],
+          [0, Math.sin(angle), Math.cos(angle)],
+        ]
+
+        const mRotateY = [
+          [Math.cos(angle), 0, Math.sin(angle)],
+          [0, 1, 0],
+          [-Math.sin(angle), 0, Math.cos(angle)]
+        ]
+
+        const mRotateZ = [
+            [Math.cos(angle), -Math.sin(angle), 0],
+            [Math.sin(angle), Math.cos(angle), 0],
+            [0, 0, 1]
+          ];
+
+        let x, y, z;
+        
+        for (const vertex of vertices) {
+          vertex.x -= CENTER_X;
+          vertex.y -= CENTER_Y;
+
+          [x, y, z] = multiplyMatrices(mRotateX, Object.values(vertex).map(_ => [_]))
+            .map(e => e.pop());
+          vertex.y = y;
+          vertex.z = z;
+
+          [x, y, z] = multiplyMatrices(mRotateY, Object.values(vertex).map(_ => [_]))
+            .map(e => e.pop());
+          vertex.x = x;
+          vertex.z = z;
+
+          [x, y, z] = multiplyMatrices(mRotateZ, Object.values(vertex).map(_ => [_]))
+            .map(e => e.pop());
+          vertex.x = x;
+          vertex.y = y;
+
+
+          vertex.x += CENTER_X;
+          vertex.y += CENTER_Y;
+        }
+      }
+
+
+      //----------------------------
+      // Main
+      //----------------------------
+      // Create the canvas element
+      const canvas = document.createElement('canvas');
+      document.body.appendChild(canvas);
+
+      // Setup canvas
+      canvas.height = HEIGHT;
+      canvas.width = WIDTH;
+
+      const vertices = [
+        new Point(CENTER_X - SIZE, CENTER_Y - SIZE, CENTER_Z - SIZE),
+        new Point(CENTER_X + SIZE, CENTER_Y - SIZE, CENTER_Z - SIZE),
+        new Point(CENTER_X + SIZE, CENTER_Y + SIZE, CENTER_Z - SIZE),
+        new Point(CENTER_X - SIZE, CENTER_Y + SIZE, CENTER_Z - SIZE),
+        new Point(CENTER_X - SIZE, CENTER_Y - SIZE, CENTER_Z + SIZE),
+        new Point(CENTER_X + SIZE, CENTER_Y - SIZE, CENTER_Z + SIZE),
+        new Point(CENTER_X + SIZE, CENTER_Y + SIZE, CENTER_Z + SIZE),
+        new Point(CENTER_X - SIZE, CENTER_Y + SIZE, CENTER_Z + SIZE),
+      ]
+      
+      // Cube vertices
+      const edges = [
+        [0, 1], [1, 2], [2, 3], [3, 0],
+        [4, 5], [5, 6], [6, 7], [7, 4],
+        [0, 4], [1, 5], [2, 6], [3, 7],
+      ]
+
+      requestAnimationFrame(loop);
+
+      let timeLast = 0;
+
+      function loop(timestamp) {
+        const timeDelta = timestamp - timeLast;
+        timeLast = timestamp;
+
+        // Draw background 
+        drawRect(canvas, 0, 0, WIDTH, HEIGHT, COLOR_BG);
+
+        // angle in radian
+        const angle = timeDelta * 0.001 * SPEED * (180 / Math.PI);
+        
+        calculateRotation(vertices, angle);
+        // console.log(vertices[0])
+
+        // Draw the cube according to calculated points 
+         drawCube(canvas, vertices, edges, COLOR_CUBE);
+
+         requestAnimationFrame(loop);
+      }
+    </script>
+  </body>
+</html>
